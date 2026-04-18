@@ -14,9 +14,9 @@ export default function IndexPage() {
     } else if (userRole === "admin") {
       setLocation("/dashboard");
     } else if (userRole === "parent") {
-      setLocation("/health-records");
+      setLocation("/dashboard");
     } else if (userRole === "student") {
-      setLocation("/health-records");
+      setLocation("/dashboard");
     } else {
       setLocation("/login");
     }

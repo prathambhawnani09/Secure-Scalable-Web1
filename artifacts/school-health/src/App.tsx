@@ -35,9 +35,6 @@ function ProtectedRoute({
   }
 
   if (!allowedRoles.includes(userRole)) {
-    if (userRole === "parent" || userRole === "student") {
-      return <Redirect to="/notifications" />;
-    }
     return <Redirect to="/dashboard" />;
   }
 
@@ -52,7 +49,7 @@ function Router() {
       <Route path="/signup" component={SignupPage} />
 
       <Route path="/dashboard">
-        <ProtectedRoute allowedRoles={["admin"]}>
+        <ProtectedRoute allowedRoles={["admin", "nurse", "parent", "student"]}>
           <DashboardPage />
         </ProtectedRoute>
       </Route>

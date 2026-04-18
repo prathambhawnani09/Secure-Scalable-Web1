@@ -41,7 +41,7 @@ export function Layout({ children }: { children: ReactNode }) {
   };
 
   const navItems = [
-    { href: "/dashboard",       label: "Overview",       icon: LayoutDashboard, roles: ["admin"] },
+    { href: "/dashboard",       label: "Overview",       icon: LayoutDashboard, roles: ["admin", "nurse", "parent", "student"] },
     { href: "/nurse",           label: "Visit Log",      icon: Stethoscope,     roles: ["nurse", "admin"] },
     { href: "/visits",          label: "All Visits",     icon: Activity,        roles: ["nurse", "admin"] },
     { href: "/alerts",          label: "Alerts",         icon: AlertCircle,     roles: ["nurse", "admin"] },

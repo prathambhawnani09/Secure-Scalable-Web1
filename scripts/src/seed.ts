@@ -11,27 +11,48 @@ import {
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set");
-}
+if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL must be set");
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = drizzle(pool);
 
 function hashPassword(password: string): string {
-  return crypto
-    .createHash("sha256")
-    .update(password + "schoolhealth_salt")
-    .digest("hex");
+  return crypto.createHash("sha256").update(password + "schoolhealth_salt").digest("hex");
 }
 
 const now = new Date();
-const daysAgo = (d: number, offsetHours = 0) => {
+function daysAgo(d: number, offsetHours = 8): Date {
   const date = new Date(now);
   date.setDate(date.getDate() - d);
-  date.setHours(8 + offsetHours, 0, 0, 0);
+  date.setHours(offsetHours, 0, 0, 0);
   return date;
-};
+}
+
+const FIRST_NAMES = [
+  "Emma","Liam","Olivia","Noah","Ava","James","Sophia","Benjamin","Isabella","Lucas",
+  "Mia","Mason","Charlotte","Ethan","Amelia","Alexander","Harper","Henry","Evelyn","Jack",
+  "Abigail","Sebastian","Emily","Michael","Elizabeth","Owen","Mila","Daniel","Ella","Logan",
+  "Avery","Jackson","Sofia","Aiden","Camila","Matthew","Aria","Samuel","Scarlett","David",
+  "Victoria","Joseph","Madison","Carter","Luna","Owen","Grace","Wyatt","Chloe","John",
+  "Penelope","Luke","Layla","Julian","Riley","Ryan","Zoey","Angel","Nora","Christopher",
+  "Lily","Josiah","Eleanor","Andrew","Hannah","Thomas","Lillian","Joshua","Addison","Ezra",
+  "Aubrey","Hudson","Ellie","Charles","Stella","Caleb","Natalia","Isaiah","Zoe","Anthony",
+  "Leah","Lincoln","Hazel","Jonathan","Violet","Eli","Aurora","Connor","Savannah","Landon",
+  "Audrey","Adrian","Brooklyn","Asher","Bella","Cameron","Claire","Leo","Skylar","Theodore",
+];
+const LAST_NAMES = [
+  "Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Rodriguez","Martinez",
+  "Hernandez","Lopez","Gonzalez","Wilson","Anderson","Thomas","Taylor","Moore","Jackson","Martin",
+  "Lee","Perez","Thompson","White","Harris","Sanchez","Clark","Ramirez","Lewis","Robinson",
+  "Walker","Young","Allen","King","Wright","Scott","Torres","Nguyen","Hill","Flores",
+  "Green","Adams","Nelson","Baker","Hall","Rivera","Campbell","Mitchell","Carter","Roberts",
+];
+
+const CHRONIC = ["asthma","eczema","diabetes","epilepsy","ADHD","anxiety"];
+const ALLERGIES = ["peanuts","dairy","shellfish","gluten","latex","bee stings","penicillin"];
+
+function randomFrom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+function maybe<T>(val: T, prob = 0.2): T[] { return Math.random() < prob ? [val] : []; }
 
 async function seed() {
   console.log("Seeding database...");
@@ -45,174 +66,195 @@ async function seed() {
 
   const passwordHash = hashPassword("password123");
 
-  const [nurse] = await db
-    .insert(usersTable)
-    .values([
-      { email: "nurse@demo.school", passwordHash, name: "Sarah Johnson", role: "nurse", schoolId: 1 },
-      { email: "admin@demo.school", passwordHash, name: "Principal Martinez", role: "admin", schoolId: 1 },
-      { email: "parent@demo.school", passwordHash, name: "Alex Parent", role: "parent", schoolId: 1 },
-    ])
-    .returning();
-
+  await db.insert(usersTable).values([
+    { email: "nurse@demo.school",  passwordHash, name: "Sarah Johnson",      role: "nurse",  schoolId: 1 },
+    { email: "admin@demo.school",  passwordHash, name: "Principal Martinez", role: "admin",  schoolId: 1 },
+    { email: "parent@demo.school", passwordHash, name: "Alex Parent",        role: "parent", schoolId: 1 },
+  ]);
   console.log("Created users");
-
-  const students = await db.insert(studentsTable).values([
-    // Class 5B — flu cluster
-    { studentCode: "STU001", name: "Emma Wilson",      grade: "5", classroom: "5B", dateOfBirth: "2013-03-15", parentEmail: "parent@demo.school",         parentPhone: "555-0101", chronicConditions: JSON.stringify(["asthma"]),    allergies: JSON.stringify(["peanuts"]),   schoolId: 1 },
-    { studentCode: "STU002", name: "Liam Garcia",      grade: "5", classroom: "5B", dateOfBirth: "2013-07-22", parentEmail: "liam.parent@demo.school",     parentPhone: "555-0102", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU003", name: "Olivia Chen",      grade: "5", classroom: "5B", dateOfBirth: "2013-01-10", parentEmail: "olivia.parent@demo.school",   parentPhone: "555-0103", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify(["dairy"]),     schoolId: 1 },
-    { studentCode: "STU004", name: "Noah Kim",         grade: "5", classroom: "5B", dateOfBirth: "2013-09-05", parentEmail: "noah.parent@demo.school",     parentPhone: "555-0104", chronicConditions: JSON.stringify(["eczema"]),   allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU005", name: "Ava Thompson",     grade: "5", classroom: "5B", dateOfBirth: "2013-05-18", parentEmail: "ava.parent@demo.school",      parentPhone: "555-0105", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU006", name: "Mason Clark",      grade: "5", classroom: "5B", dateOfBirth: "2013-11-02", parentEmail: "mason.parent@demo.school",    parentPhone: "555-0106", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    // Class 3A — stomach virus cluster
-    { studentCode: "STU007", name: "James Rodriguez",  grade: "3", classroom: "3A", dateOfBirth: "2015-11-30", parentEmail: "james.parent@demo.school",    parentPhone: "555-0107", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU008", name: "Sophia Martinez",  grade: "3", classroom: "3A", dateOfBirth: "2015-04-12", parentEmail: "sophia.parent@demo.school",   parentPhone: "555-0108", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU009", name: "Benjamin Lee",     grade: "3", classroom: "3A", dateOfBirth: "2015-08-25", parentEmail: "benjamin.parent@demo.school", parentPhone: "555-0109", chronicConditions: JSON.stringify(["diabetes"]), allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU010", name: "Isabella Hall",    grade: "3", classroom: "3A", dateOfBirth: "2015-06-14", parentEmail: "isabella.parent@demo.school", parentPhone: "555-0110", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    // Class 2C — respiratory symptoms
-    { studentCode: "STU011", name: "Mia Johnson",      grade: "2", classroom: "2C", dateOfBirth: "2016-02-14", parentEmail: "mia.parent@demo.school",      parentPhone: "555-0111", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify(["shellfish"]), schoolId: 1 },
-    { studentCode: "STU012", name: "Lucas Brown",      grade: "2", classroom: "2C", dateOfBirth: "2016-06-20", parentEmail: "lucas.parent@demo.school",    parentPhone: "555-0112", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU013", name: "Aria Scott",       grade: "2", classroom: "2C", dateOfBirth: "2016-09-03", parentEmail: "aria.parent@demo.school",     parentPhone: "555-0113", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    // Class 4D — mixed symptoms
-    { studentCode: "STU014", name: "Charlotte Davis",  grade: "4", classroom: "4D", dateOfBirth: "2014-09-08", parentEmail: "charlotte.parent@demo.school",parentPhone: "555-0114", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU015", name: "Henry Wilson",     grade: "4", classroom: "4D", dateOfBirth: "2014-12-01", parentEmail: "henry.parent@demo.school",    parentPhone: "555-0115", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU016", name: "Zoe Adams",        grade: "4", classroom: "4D", dateOfBirth: "2014-04-22", parentEmail: "zoe.parent@demo.school",      parentPhone: "555-0116", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU017", name: "Ethan Walker",     grade: "4", classroom: "4D", dateOfBirth: "2014-08-11", parentEmail: "ethan.parent@demo.school",    parentPhone: "555-0117", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    // Class 1B — kindergarten
-    { studentCode: "STU018", name: "Amelia Taylor",    grade: "1", classroom: "1B", dateOfBirth: "2017-03-22", parentEmail: "amelia.parent@demo.school",   parentPhone: "555-0118", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU019", name: "Sebastian Anderson",grade:"1", classroom: "1B", dateOfBirth: "2017-07-14", parentEmail: "sebastian.parent@demo.school",parentPhone: "555-0119", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU020", name: "Lily Thomas",      grade: "1", classroom: "1B", dateOfBirth: "2017-01-30", parentEmail: "lily.parent@demo.school",     parentPhone: "555-0120", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    // Class K1
-    { studentCode: "STU021", name: "Harper Jackson",   grade: "K", classroom: "K1", dateOfBirth: "2018-01-09", parentEmail: "harper.parent@demo.school",   parentPhone: "555-0121", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU022", name: "Owen White",       grade: "K", classroom: "K1", dateOfBirth: "2018-04-17", parentEmail: "owen.parent@demo.school",     parentPhone: "555-0122", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    // Class 6A — new high-risk
-    { studentCode: "STU023", name: "Dylan Harris",     grade: "6", classroom: "6A", dateOfBirth: "2012-05-05", parentEmail: "dylan.parent@demo.school",    parentPhone: "555-0123", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU024", name: "Chloe Martin",     grade: "6", classroom: "6A", dateOfBirth: "2012-09-21", parentEmail: "chloe.parent@demo.school",    parentPhone: "555-0124", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU025", name: "Ryan Thompson",    grade: "6", classroom: "6A", dateOfBirth: "2012-11-13", parentEmail: "ryan.parent@demo.school",     parentPhone: "555-0125", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU026", name: "Nora Lewis",       grade: "6", classroom: "6A", dateOfBirth: "2012-03-08", parentEmail: "nora.parent@demo.school",     parentPhone: "555-0126", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU027", name: "Jack Robinson",    grade: "6", classroom: "6A", dateOfBirth: "2012-07-25", parentEmail: "jack.parent@demo.school",     parentPhone: "555-0127", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    // Class 2A
-    { studentCode: "STU028", name: "Ella Moore",       grade: "2", classroom: "2A", dateOfBirth: "2016-10-12", parentEmail: "ella.parent@demo.school",     parentPhone: "555-0128", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU029", name: "Wyatt Clark",      grade: "2", classroom: "2A", dateOfBirth: "2016-12-04", parentEmail: "wyatt.parent@demo.school",    parentPhone: "555-0129", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    // Class 4B
-    { studentCode: "STU030", name: "Penelope Young",   grade: "4", classroom: "4B", dateOfBirth: "2014-02-18", parentEmail: "penelope.parent@demo.school", parentPhone: "555-0130", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-    { studentCode: "STU031", name: "Samuel King",      grade: "4", classroom: "4B", dateOfBirth: "2014-06-30", parentEmail: "samuel.parent@demo.school",   parentPhone: "555-0131", chronicConditions: JSON.stringify([]),            allergies: JSON.stringify([]),            schoolId: 1 },
-  ]).returning();
-
-  console.log("Created students");
 
   const allUsers = await db.select().from(usersTable);
   const nurseId = allUsers.find(u => u.role === "nurse")!.id;
 
-  const idx = (code: string) => students.findIndex(s => s.studentCode === code);
+  // Build classrooms: grades 1-12, sections A and B
+  const classrooms: { grade: string; classroom: string }[] = [];
+  for (let g = 1; g <= 12; g++) {
+    classrooms.push({ grade: String(g), classroom: `${g}A` });
+    classrooms.push({ grade: String(g), classroom: `${g}B` });
+  }
 
-  await db.insert(visitsTable).values([
-    // ---- 5B flu cluster (days 0-5) ----
-    { studentId: students[idx("STU001")].id, grade:"5", classroom:"5B", symptoms: JSON.stringify(["fever","headache","nausea"]),        temperature: 101.2, notes: "Student sent home with flu-like symptoms.",          actionTaken: "sent_home",         loggedById: nurseId, visitDate: daysAgo(0, 0) },
-    { studentId: students[idx("STU002")].id, grade:"5", classroom:"5B", symptoms: JSON.stringify(["fever","sore_throat","cough"]),      temperature: 100.8, notes: "Similar symptoms to other 5B students.",             actionTaken: "sent_home",         loggedById: nurseId, visitDate: daysAgo(1, 1) },
-    { studentId: students[idx("STU003")].id, grade:"5", classroom:"5B", symptoms: JSON.stringify(["fever","headache","fatigue"]),       temperature: 102.1, notes: "High fever, parent called.",                         actionTaken: "called_parent",     loggedById: nurseId, visitDate: daysAgo(2, 2) },
-    { studentId: students[idx("STU004")].id, grade:"5", classroom:"5B", symptoms: JSON.stringify(["nausea","stomach_pain","headache"]), temperature:  99.5, notes: "Mild symptoms, rested in office.",                   actionTaken: "returned_to_class", loggedById: nurseId, visitDate: daysAgo(3, 0) },
-    { studentId: students[idx("STU005")].id, grade:"5", classroom:"5B", symptoms: JSON.stringify(["fever","cough","sore_throat"]),      temperature: 101.5, notes: "Coughing frequently, sent home.",                    actionTaken: "sent_home",         loggedById: nurseId, visitDate: daysAgo(3, 3) },
-    { studentId: students[idx("STU006")].id, grade:"5", classroom:"5B", symptoms: JSON.stringify(["fever","body_aches","chills"]),      temperature: 101.9, notes: "Body aches and chills — possible influenza.",         actionTaken: "sent_home",         loggedById: nurseId, visitDate: daysAgo(4, 1) },
-    { studentId: students[idx("STU001")].id, grade:"5", classroom:"5B", symptoms: JSON.stringify(["fever","headache"]),                 temperature: 100.3, notes: "Follow-up visit — still symptomatic.",                actionTaken: "called_parent",     loggedById: nurseId, visitDate: daysAgo(5, 2) },
+  // ~4-5 students per classroom = ~96-120 students
+  const studentRows: Parameters<typeof db.insert<typeof studentsTable>>[0] extends (t: any) => any ? never : any[] = [];
+  let stuCode = 1;
+  const usedNames = new Set<string>();
 
-    // ---- 6A high-risk new cluster (days 0-4) ----
-    { studentId: students[idx("STU023")].id, grade:"6", classroom:"6A", symptoms: JSON.stringify(["fever","headache","rash"]),          temperature: 101.0, notes: "Fever with rash — referred to doctor.",               actionTaken: "referred_to_doctor",loggedById: nurseId, visitDate: daysAgo(0, 1) },
-    { studentId: students[idx("STU024")].id, grade:"6", classroom:"6A", symptoms: JSON.stringify(["fever","rash","fatigue"]),           temperature: 100.5, notes: "Spreading rash on arms, isolated.",                   actionTaken: "sent_home",         loggedById: nurseId, visitDate: daysAgo(1, 0) },
-    { studentId: students[idx("STU025")].id, grade:"6", classroom:"6A", symptoms: JSON.stringify(["fever","headache","sore_throat"]),   temperature: 102.3, notes: "High fever, parents notified.",                      actionTaken: "called_parent",     loggedById: nurseId, visitDate: daysAgo(2, 3) },
-    { studentId: students[idx("STU026")].id, grade:"6", classroom:"6A", symptoms: JSON.stringify(["fever","cough","body_aches"]),       temperature: 101.7, notes: "Chills and cough, sent home early.",                 actionTaken: "sent_home",         loggedById: nurseId, visitDate: daysAgo(3, 1) },
-    { studentId: students[idx("STU027")].id, grade:"6", classroom:"6A", symptoms: JSON.stringify(["headache","fatigue","sore_throat"]), temperature:  99.8, notes: "Feeling generally unwell.",                          actionTaken: "monitored",         loggedById: nurseId, visitDate: daysAgo(4, 2) },
-    { studentId: students[idx("STU023")].id, grade:"6", classroom:"6A", symptoms: JSON.stringify(["fever","rash"]),                    temperature: 100.9, notes: "Follow-up — rash spreading. Possible scarlet fever.", actionTaken: "referred_to_doctor",loggedById: nurseId, visitDate: daysAgo(4, 4) },
+  for (const { grade, classroom } of classrooms) {
+    const count = 4 + (Math.random() > 0.5 ? 1 : 0); // 4 or 5 per class
+    for (let i = 0; i < count; i++) {
+      let name = "";
+      let tries = 0;
+      do {
+        name = `${randomFrom(FIRST_NAMES)} ${randomFrom(LAST_NAMES)}`;
+        tries++;
+      } while (usedNames.has(name) && tries < 20);
+      usedNames.add(name);
 
-    // ---- 3A stomach virus (days 3-7) ----
-    { studentId: students[idx("STU007")].id, grade:"3", classroom:"3A", symptoms: JSON.stringify(["stomach_pain","nausea"]),            temperature:  98.9, notes: "Upset stomach, monitored.",                          actionTaken: "monitored",         loggedById: nurseId, visitDate: daysAgo(3, 0) },
-    { studentId: students[idx("STU008")].id, grade:"3", classroom:"3A", symptoms: JSON.stringify(["headache","stomach_pain"]),          temperature:  null, notes: "Mild headache, returned to class.",                  actionTaken: "returned_to_class", loggedById: nurseId, visitDate: daysAgo(4, 2) },
-    { studentId: students[idx("STU009")].id, grade:"3", classroom:"3A", symptoms: JSON.stringify(["stomach_pain","nausea","fatigue"]),  temperature:  99.1, notes: "Possible stomach virus, sent home.",                 actionTaken: "sent_home",         loggedById: nurseId, visitDate: daysAgo(5, 1) },
-    { studentId: students[idx("STU010")].id, grade:"3", classroom:"3A", symptoms: JSON.stringify(["vomiting","stomach_pain"]),          temperature:  99.4, notes: "Vomited in class, parents called.",                  actionTaken: "called_parent",     loggedById: nurseId, visitDate: daysAgo(6, 3) },
-    { studentId: students[idx("STU007")].id, grade:"3", classroom:"3A", symptoms: JSON.stringify(["nausea","vomiting"]),                temperature:  null, notes: "Recurring nausea, kept in office.",                  actionTaken: "monitored",         loggedById: nurseId, visitDate: daysAgo(7, 0) },
+      const birthYear = 2024 - (6 + parseInt(grade));
+      const birthMonth = String(Math.floor(Math.random() * 12) + 1).padStart(2, "0");
+      const birthDay   = String(Math.floor(Math.random() * 28) + 1).padStart(2, "0");
 
-    // ---- 2C respiratory (days 4-9) ----
-    { studentId: students[idx("STU011")].id, grade:"2", classroom:"2C", symptoms: JSON.stringify(["rash","itching"]),                  temperature:  98.6, notes: "Possible allergic reaction, parent notified.",       actionTaken: "called_parent",     loggedById: nurseId, visitDate: daysAgo(4, 0) },
-    { studentId: students[idx("STU012")].id, grade:"2", classroom:"2C", symptoms: JSON.stringify(["cough","runny_nose"]),               temperature:  null, notes: "Cold symptoms, returned to class.",                  actionTaken: "returned_to_class", loggedById: nurseId, visitDate: daysAgo(5, 2) },
-    { studentId: students[idx("STU013")].id, grade:"2", classroom:"2C", symptoms: JSON.stringify(["cough","sore_throat","fever"]),      temperature: 100.1, notes: "Cough with low fever, monitored.",                   actionTaken: "monitored",         loggedById: nurseId, visitDate: daysAgo(6, 1) },
+      studentRows.push({
+        studentCode: `STU${String(stuCode).padStart(3, "0")}`,
+        name,
+        grade,
+        classroom,
+        dateOfBirth: `${birthYear}-${birthMonth}-${birthDay}`,
+        parentEmail: stuCode === 1 ? "parent@demo.school" : `parent${stuCode}@demo.school`,
+        parentPhone: `555-${String(1000 + stuCode).padStart(4, "0")}`,
+        chronicConditions: JSON.stringify(maybe(randomFrom(CHRONIC), 0.15)),
+        allergies:         JSON.stringify(maybe(randomFrom(ALLERGIES), 0.12)),
+        schoolId: 1,
+      });
+      stuCode++;
+    }
+  }
 
-    // ---- 4D mixed symptoms ----
-    { studentId: students[idx("STU014")].id, grade:"4", classroom:"4D", symptoms: JSON.stringify(["headache","fatigue"]),              temperature:  98.8, notes: "Complained of tiredness.",                           actionTaken: "monitored",         loggedById: nurseId, visitDate: daysAgo(1, 0) },
-    { studentId: students[idx("STU015")].id, grade:"4", classroom:"4D", symptoms: JSON.stringify(["cough","sore_throat"]),             temperature:  99.2, notes: "Early cold symptoms.",                               actionTaken: "returned_to_class", loggedById: nurseId, visitDate: daysAgo(2, 2) },
-    { studentId: students[idx("STU016")].id, grade:"4", classroom:"4D", symptoms: JSON.stringify(["fever","headache"]),                temperature: 100.4, notes: "Developed fever after lunch.",                       actionTaken: "sent_home",         loggedById: nurseId, visitDate: daysAgo(4, 3) },
-    { studentId: students[idx("STU017")].id, grade:"4", classroom:"4D", symptoms: JSON.stringify(["fatigue","dizziness"]),             temperature:  99.0, notes: "Dizzy, rested — cleared to return.",                 actionTaken: "returned_to_class", loggedById: nurseId, visitDate: daysAgo(5, 0) },
+  const students = await db.insert(studentsTable).values(studentRows).returning();
+  console.log(`Created ${students.length} students`);
 
-    // ---- 1B ----
-    { studentId: students[idx("STU018")].id, grade:"1", classroom:"1B", symptoms: JSON.stringify(["fever"]),                           temperature: 101.0, notes: "Fever developed during morning break.",              actionTaken: "sent_home",         loggedById: nurseId, visitDate: daysAgo(0, 0) },
-    { studentId: students[idx("STU019")].id, grade:"1", classroom:"1B", symptoms: JSON.stringify(["stomach_pain"]),                    temperature:  null, notes: "Stomach ache before lunch.",                        actionTaken: "monitored",         loggedById: nurseId, visitDate: daysAgo(1, 1) },
-    { studentId: students[idx("STU020")].id, grade:"1", classroom:"1B", symptoms: JSON.stringify(["cough","runny_nose"]),               temperature:  null, notes: "Cold-like symptoms.",                               actionTaken: "returned_to_class", loggedById: nurseId, visitDate: daysAgo(3, 2) },
+  // Helper: find students in a classroom
+  const inClass = (cls: string) => students.filter(s => s.classroom === cls);
 
-    // ---- K1 ----
-    { studentId: students[idx("STU021")].id, grade:"K", classroom:"K1", symptoms: JSON.stringify(["rash","fever"]),                    temperature:  99.8, notes: "Possible viral rash, parents notified.",             actionTaken: "called_parent",     loggedById: nurseId, visitDate: daysAgo(2, 0) },
-    { studentId: students[idx("STU022")].id, grade:"K", classroom:"K1", symptoms: JSON.stringify(["vomiting"]),                        temperature:  null, notes: "Vomited after lunch, sent home.",                    actionTaken: "sent_home",         loggedById: nurseId, visitDate: daysAgo(3, 1) },
+  // Build visits — create realistic clusters
+  type VisitRow = { studentId: number; grade: string; classroom: string; symptoms: string; temperature: number | null; notes: string; actionTaken: string; loggedById: number; visitDate: Date };
+  const visitRows: VisitRow[] = [];
 
-    // ---- 2A mild ----
-    { studentId: students[idx("STU028")].id, grade:"2", classroom:"2A", symptoms: JSON.stringify(["headache"]),                        temperature:  null, notes: "Mild headache, returned after rest.",                actionTaken: "returned_to_class", loggedById: nurseId, visitDate: daysAgo(6, 0) },
-    { studentId: students[idx("STU029")].id, grade:"2", classroom:"2A", symptoms: JSON.stringify(["cough"]),                           temperature:  null, notes: "Mild cough, no fever.",                             actionTaken: "returned_to_class", loggedById: nurseId, visitDate: daysAgo(7, 1) },
+  function addVisit(studentId: number, grade: string, classroom: string, symptoms: string[], temp: number | null, notes: string, action: string, daysBack: number, hour = 9) {
+    visitRows.push({ studentId, grade, classroom, symptoms: JSON.stringify(symptoms), temperature: temp, notes, actionTaken: action, loggedById: nurseId, visitDate: daysAgo(daysBack, hour) });
+  }
 
-    // ---- 4B mild ----
-    { studentId: students[idx("STU030")].id, grade:"4", classroom:"4B", symptoms: JSON.stringify(["fatigue","headache"]),              temperature:  98.5, notes: "Felt unwell, rested and returned.",                  actionTaken: "returned_to_class", loggedById: nurseId, visitDate: daysAgo(8, 0) },
-    { studentId: students[idx("STU031")].id, grade:"4", classroom:"4B", symptoms: JSON.stringify(["sore_throat"]),                     temperature:  null, notes: "Mild sore throat.",                                 actionTaken: "returned_to_class", loggedById: nurseId, visitDate: daysAgo(9, 2) },
-  ]);
+  // ── HIGH RISK: 10A — fever + headache outbreak ──────────────────────────
+  const c10A = inClass("10A");
+  if (c10A.length >= 4) {
+    addVisit(c10A[0].id, "10","10A", ["fever","headache","body_aches"],         102.1, "High fever, body aches — sent home.",                        "sent_home",         0, 9);
+    addVisit(c10A[1].id, "10","10A", ["fever","cough","sore_throat"],            101.5, "Cough and fever — suspected flu.",                           "sent_home",         1, 10);
+    addVisit(c10A[2].id, "10","10A", ["fever","fatigue","headache"],             100.9, "Fatigue and persistent headache.",                           "called_parent",     2, 9);
+    addVisit(c10A[3].id, "10","10A", ["headache","nausea","fever"],               99.8, "Nausea and mild fever, monitored.",                          "monitored",         3, 11);
+    if (c10A.length >= 5) addVisit(c10A[4].id,"10","10A",["fever","chills","body_aches"],101.3,"Chills — possible flu, referred.","referred_to_doctor",4,8);
+  }
 
-  console.log("Created visits");
+  // ── HIGH RISK: 7B — stomach virus cluster ───────────────────────────────
+  const c7B = inClass("7B");
+  if (c7B.length >= 4) {
+    addVisit(c7B[0].id, "7","7B", ["stomach_pain","nausea","vomiting"],  null, "Vomited twice — sent home.",                                "sent_home",         0, 10);
+    addVisit(c7B[1].id, "7","7B", ["nausea","stomach_pain"],             98.9, "Upset stomach, rested in office.",                           "monitored",         1,  9);
+    addVisit(c7B[2].id, "7","7B", ["vomiting","fatigue"],                null, "Vomited after lunch, parent called.",                        "called_parent",     2, 13);
+    addVisit(c7B[3].id, "7","7B", ["stomach_pain","dizziness"],          99.2, "Dizzy and cramping — sent home.",                            "sent_home",         3, 10);
+    if (c7B.length >= 5) addVisit(c7B[4].id,"7","7B",["nausea","headache"],null,"Felt queasy all morning.","returned_to_class",4,9);
+  }
 
-  const [alert1, alert2, alert3, alert4] = await db.insert(alertsTable).values([
+  // ── HIGH RISK: 5B — flu cluster ─────────────────────────────────────────
+  const c5B = inClass("5B");
+  if (c5B.length >= 4) {
+    addVisit(c5B[0].id, "5","5B", ["fever","headache","nausea"],         101.2, "Flu-like symptoms, sent home.",                              "sent_home",         0, 9);
+    addVisit(c5B[1].id, "5","5B", ["fever","sore_throat","cough"],       100.8, "Similar symptoms to classmates.",                            "sent_home",         1, 10);
+    addVisit(c5B[2].id, "5","5B", ["fever","headache","fatigue"],        102.1, "High fever, parent called.",                                 "called_parent",     2, 9);
+    addVisit(c5B[3].id, "5","5B", ["cough","sore_throat","fever"],       101.5, "Coughing frequently.",                                       "sent_home",         3, 11);
+    if (c5B.length >= 5) addVisit(c5B[4].id,"5","5B",["fever","body_aches"],101.9,"Body aches — referred to doctor.","referred_to_doctor",4,8);
+  }
+
+  // ── MEDIUM RISK: 12A — respiratory cluster ──────────────────────────────
+  const c12A = inClass("12A");
+  if (c12A.length >= 3) {
+    addVisit(c12A[0].id,"12","12A",["cough","sore_throat","fever"],      100.2,"Persistent cough with low fever.",                           "monitored",         1,10);
+    addVisit(c12A[1].id,"12","12A",["cough","runny_nose"],               null, "Cold-like symptoms.",                                        "returned_to_class", 3, 9);
+    addVisit(c12A[2].id,"12","12A",["fever","sore_throat"],              100.6,"Sore throat and fever — sent home.",                         "sent_home",         5, 9);
+  }
+
+  // ── MEDIUM RISK: 3A — stomach cluster ───────────────────────────────────
+  const c3A = inClass("3A");
+  if (c3A.length >= 3) {
+    addVisit(c3A[0].id, "3","3A", ["stomach_pain","nausea"],             98.9, "Upset stomach after lunch.",                                 "monitored",         2, 12);
+    addVisit(c3A[1].id, "3","3A", ["stomach_pain","fatigue"],            99.1, "Stomach ache, sent home.",                                   "sent_home",         4, 10);
+    addVisit(c3A[2].id, "3","3A", ["nausea","vomiting"],                 null, "Vomited — parents notified.",                                "called_parent",     6, 11);
+  }
+
+  // ── MEDIUM RISK: 8B — headache cluster ──────────────────────────────────
+  const c8B = inClass("8B");
+  if (c8B.length >= 3) {
+    addVisit(c8B[0].id, "8","8B", ["headache","fatigue"],                98.8, "Persistent headache, sent to rest.",                         "monitored",         1, 10);
+    addVisit(c8B[1].id, "8","8B", ["headache","dizziness"],              null, "Dizzy and headache — sent home.",                            "sent_home",         2,  9);
+    addVisit(c8B[2].id, "8","8B", ["headache","nausea"],                 99.3, "Nausea with headache.",                                      "monitored",         4,  9);
+  }
+
+  // ── LOW RISK: spread individual visits across other classes ─────────────
+  const singleVisitClasses = ["1A","1B","2A","2B","4A","4B","6A","6B","9A","9B","11A","11B"];
+  const symptomSets = [
+    { s:["cough"],              t: null,  n:"Mild cough, no fever.",             a:"returned_to_class" },
+    { s:["headache"],           t: null,  n:"Mild headache after break.",        a:"returned_to_class" },
+    { s:["fever"],              t:100.1,  n:"Low-grade fever, sent home.",       a:"sent_home"         },
+    { s:["stomach_pain"],       t: null,  n:"Stomach ache before lunch.",        a:"monitored"         },
+    { s:["sore_throat"],        t: null,  n:"Sore throat, returned to class.",   a:"returned_to_class" },
+    { s:["rash"],               t: 99.2, n:"Mild rash, parent notified.",       a:"called_parent"     },
+    { s:["fatigue","headache"], t: 98.9, n:"Tired and headache, rested.",       a:"returned_to_class" },
+    { s:["cough","runny_nose"], t: null,  n:"Cold symptoms.",                    a:"returned_to_class" },
+  ];
+
+  let dayOffset = 0;
+  for (const cls of singleVisitClasses) {
+    const group = inClass(cls);
+    if (group.length > 0) {
+      const sv = symptomSets[dayOffset % symptomSets.length];
+      addVisit(group[0].id, group[0].grade, cls, sv.s, sv.t, sv.n, sv.a, dayOffset % 7, 10);
+      if (group.length > 1) {
+        const sv2 = symptomSets[(dayOffset + 3) % symptomSets.length];
+        addVisit(group[1].id, group[1].grade, cls, sv2.s, sv2.t, sv2.n, sv2.a, (dayOffset + 2) % 7, 9);
+      }
+    }
+    dayOffset++;
+  }
+
+  await db.insert(visitsTable).values(visitRows as any);
+  console.log(`Created ${visitRows.length} visits`);
+
+  const [alert1, alert2, alert3, alert4, alert5] = await db.insert(alertsTable).values([
     {
-      type: "possible_outbreak",
-      severity: "high",
-      status: "active",
-      title: "Possible Flu Outbreak — Class 5B",
-      description: "7 students from classroom 5B reported fever, headache, and respiratory symptoms within the last 7 days. Pattern strongly suggests influenza. Immediate isolation and parent notification recommended.",
-      affectedClassroom: "5B",
-      affectedGrade: "5",
-      affectedCount: 7,
-      symptoms: JSON.stringify(["fever","headache","cough","sore_throat","nausea","body_aches"]),
-      schoolId: 1,
+      type: "possible_outbreak", severity: "high", status: "active",
+      title: "Flu Outbreak — Class 10A",
+      description: "5 students from Class 10A reported fever, headache, and body aches within 5 days. Pattern strongly suggests influenza. Recommend isolation and parent notification.",
+      affectedClassroom: "10A", affectedGrade: "10", affectedCount: 5,
+      symptoms: JSON.stringify(["fever","headache","body_aches","cough","chills"]), schoolId: 1,
     },
     {
-      type: "possible_outbreak",
-      severity: "high",
-      status: "active",
-      title: "Possible Viral Rash Outbreak — Class 6A",
-      description: "6 students from classroom 6A reported fever and rash symptoms over the past 5 days. Pattern may indicate scarlet fever or viral exanthem. Medical review recommended immediately.",
-      affectedClassroom: "6A",
-      affectedGrade: "6",
-      affectedCount: 6,
-      symptoms: JSON.stringify(["fever","rash","headache","fatigue","sore_throat"]),
-      schoolId: 1,
+      type: "possible_outbreak", severity: "high", status: "active",
+      title: "Stomach Virus Outbreak — Class 7B",
+      description: "5 students from Class 7B reported vomiting, nausea, and stomach pain over 5 days. Possible norovirus. Cafeteria hygiene review recommended.",
+      affectedClassroom: "7B", affectedGrade: "7", affectedCount: 5,
+      symptoms: JSON.stringify(["stomach_pain","nausea","vomiting","dizziness","fatigue"]), schoolId: 1,
     },
     {
-      type: "cluster_detected",
-      severity: "medium",
-      status: "active",
-      title: "Stomach Virus Cluster — Class 3A",
-      description: "5 students from classroom 3A reported gastrointestinal symptoms (stomach pain, nausea, vomiting) in the past 7 days. Possible norovirus. Monitor cafeteria hygiene.",
-      affectedClassroom: "3A",
-      affectedGrade: "3",
-      affectedCount: 5,
-      symptoms: JSON.stringify(["stomach_pain","nausea","vomiting","fatigue"]),
-      schoolId: 1,
+      type: "possible_outbreak", severity: "high", status: "active",
+      title: "Flu Cluster — Class 5B",
+      description: "5 students from Class 5B reported fever and respiratory symptoms in the last 5 days. Influenza strongly suspected.",
+      affectedClassroom: "5B", affectedGrade: "5", affectedCount: 5,
+      symptoms: JSON.stringify(["fever","headache","cough","sore_throat","body_aches"]), schoolId: 1,
     },
     {
-      type: "elevated_symptoms",
-      severity: "low",
-      status: "resolved",
-      title: "Respiratory Symptoms — Class 2C",
-      description: "3 students from classroom 2C reported respiratory symptoms. Situation monitored and resolved — unrelated cold viruses.",
-      affectedClassroom: "2C",
-      affectedGrade: "2",
-      affectedCount: 3,
-      symptoms: JSON.stringify(["cough","runny_nose","sore_throat"]),
-      schoolId: 1,
+      type: "cluster_detected", severity: "medium", status: "active",
+      title: "Headache Cluster — Class 8B",
+      description: "3 students from Class 8B reported headache and dizziness over 4 days. Monitor for progression. Could indicate dehydration or early viral illness.",
+      affectedClassroom: "8B", affectedGrade: "8", affectedCount: 3,
+      symptoms: JSON.stringify(["headache","dizziness","fatigue","nausea"]), schoolId: 1,
+    },
+    {
+      type: "elevated_symptoms", severity: "low", status: "resolved",
+      title: "Respiratory Symptoms — Class 12A",
+      description: "3 students in Class 12A reported mild cough and sore throat. All recovered. No further concern.",
+      affectedClassroom: "12A", affectedGrade: "12", affectedCount: 3,
+      symptoms: JSON.stringify(["cough","sore_throat","runny_nose"]), schoolId: 1,
       resolvedAt: daysAgo(1),
       resolvedBy: "Principal Martinez",
-      resolutionNote: "Symptoms were mild and unrelated. Students recovered fully.",
+      resolutionNote: "Symptoms resolved naturally. Students recovered fully.",
     },
   ]).returning();
 
@@ -223,35 +265,33 @@ async function seed() {
     await db.insert(notificationsTable).values([
       {
         userId: parent.id,
-        title: "Outbreak Alert: Class 5B Flu",
-        message: "A flu outbreak has been detected in Class 5B. 7 students have reported fever and respiratory symptoms. Please monitor your child for symptoms and keep them home if unwell.",
-        type: "outbreak_notice",
-        isRead: false,
-        alertId: alert1.id,
+        title: "Outbreak Alert: Flu in Class 10A",
+        message: "A flu outbreak has been detected in Class 10A. 5 students reported fever and body aches. Please monitor your child for symptoms and keep them home if unwell.",
+        type: "outbreak_notice", isRead: false, alertId: alert1.id,
       },
       {
         userId: parent.id,
-        title: "Urgent: Possible Rash Outbreak in Class 6A",
-        message: "Students in Class 6A have been reporting fever and rash. This may indicate scarlet fever. Please check your child for any rash and contact the school nurse immediately.",
-        type: "outbreak_notice",
-        isRead: false,
-        alertId: alert2.id,
+        title: "Outbreak Alert: Stomach Virus in Class 7B",
+        message: "A possible stomach virus outbreak has been detected in Class 7B. 5 students reported nausea and vomiting. Please ensure your child washes hands frequently.",
+        type: "outbreak_notice", isRead: false, alertId: alert2.id,
       },
       {
         userId: parent.id,
-        title: "Exposure Notice: Stomach Virus in Class 3A",
-        message: "Students in Class 3A may have been exposed to a stomach virus. Watch for nausea, stomach pain, or vomiting over the next 48 hours. Keep your child hydrated.",
-        type: "exposure_alert",
-        isRead: false,
-        alertId: alert3.id,
+        title: "Flu Cluster Detected: Class 5B",
+        message: "5 students from Class 5B have reported flu-like symptoms. Please monitor your child for fever, cough, or sore throat.",
+        type: "exposure_alert", isRead: false, alertId: alert3.id,
       },
       {
         userId: parent.id,
-        title: "Cluster Warning Resolved — Class 2C",
-        message: "The respiratory symptom cluster in Class 2C has been resolved. All students have recovered. No further action needed.",
-        type: "cluster_warning",
-        isRead: true,
-        alertId: alert4.id,
+        title: "Heads Up: Headache Reports in Class 8B",
+        message: "Several students in Class 8B have reported headaches. Ensure your child stays hydrated and gets enough sleep.",
+        type: "cluster_warning", isRead: false, alertId: alert4.id,
+      },
+      {
+        userId: parent.id,
+        title: "Resolved: Respiratory Symptoms in Class 12A",
+        message: "The respiratory symptoms reported in Class 12A have resolved. All students recovered. No further action needed.",
+        type: "cluster_warning", isRead: true, alertId: alert5.id,
       },
     ]);
   }
@@ -261,7 +301,4 @@ async function seed() {
   await pool.end();
 }
 
-seed().catch((err) => {
-  console.error("Seeding failed:", err);
-  process.exit(1);
-});
+seed().catch(err => { console.error("Seeding failed:", err); process.exit(1); });
