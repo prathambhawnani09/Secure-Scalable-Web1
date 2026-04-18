@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
+  KeyRound,
   Shield,
   User,
   Phone,
@@ -56,14 +57,23 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role | "">("");
+  const [accessCode, setAccessCode] = useState("");
+  const [accessCodeError, setAccessCodeError] = useState("");
   const [phone, setPhone] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showAccessCode, setShowAccessCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const requiresCode = role === "admin" || role === "nurse";
+  const ACCESS_CODES: Record<string, string> = {
+    admin: "admin222",
+    nurse: "nurse222",
+  };
   const [, setLocation] = useLocation();
   const { setAuth } = useAuth();
 
@@ -80,6 +90,18 @@ export default function SignupPage() {
   const handleInfoNext = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !email.trim() || !role) return;
+    if (requiresCode) {
+      const expected = ACCESS_CODES[role];
+      if (!accessCode.trim()) {
+        setAccessCodeError("An access code is required for this role.");
+        return;
+      }
+      if (accessCode.trim() !== expected) {
+        setAccessCodeError("Incorrect access code. Please contact your school administrator.");
+        return;
+      }
+    }
+    setAccessCodeError("");
     setError("");
     setStep("password");
   };
@@ -102,7 +124,7 @@ export default function SignupPage() {
       const res = await fetch(`${API_BASE}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: fullName, email, password, role, phone, schoolName }),
+        body: JSON.stringify({ name: fullName, email, password, role, phone, schoolName, accessCode }),
       });
       const data = await res.json();
 
@@ -111,10 +133,10 @@ export default function SignupPage() {
         return;
       }
 
-      setAuth(data.token, data.user.role);
+      setAuth(data.token, data.user.role, data.user.name, data.user.email);
       if (data.user.role === "nurse") setLocation("/nurse");
       else if (data.user.role === "admin") setLocation("/dashboard");
-      else setLocation("/notifications");
+      else setLocation("/health-records");
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -193,7 +215,7 @@ export default function SignupPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="role">Role <span className="text-destructive">*</span></Label>
-                  <Select value={role} onValueChange={(v) => setRole(v as Role)} required>
+                  <Select value={role} onValueChange={(v) => { setRole(v as Role); setAccessCode(""); setAccessCodeError(""); }} required>
                     <SelectTrigger id="role">
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
@@ -205,6 +227,40 @@ export default function SignupPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {requiresCode && (
+                  <div className="space-y-2">
+                    <Label htmlFor="accessCode" className="flex items-center gap-1">
+                      <KeyRound className="h-3 w-3" /> Access Code <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="accessCode"
+                        type={showAccessCode ? "text" : "password"}
+                        placeholder={`Enter the ${role} access code`}
+                        value={accessCode}
+                        onChange={(e) => { setAccessCode(e.target.value); setAccessCodeError(""); }}
+                        className="pr-10"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAccessCode(!showAccessCode)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showAccessCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {accessCodeError && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" /> {accessCodeError}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Required for staff roles. Contact your school administrator if you don't have one.
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="flex items-center gap-1">

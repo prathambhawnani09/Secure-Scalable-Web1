@@ -1,10 +1,13 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, UserRole } from "@workspace/api-client-react";
+import { createContext, useContext, useState, ReactNode } from "react";
+import { UserRole } from "@workspace/api-client-react";
 
 interface AuthContextType {
   token: string | null;
   userRole: UserRole | null;
-  setAuth: (token: string, role: UserRole) => void;
+  userName: string | null;
+  userEmail: string | null;
+  isDemo: boolean;
+  setAuth: (token: string, role: UserRole, name?: string, email?: string) => void;
   logout: () => void;
 }
 
@@ -15,23 +18,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole | null>(
     (localStorage.getItem("user_role") as UserRole) || null
   );
+  const [userName, setUserName] = useState<string | null>(
+    localStorage.getItem("user_name") || null
+  );
+  const [userEmail, setUserEmail] = useState<string | null>(
+    localStorage.getItem("user_email") || null
+  );
 
-  const setAuth = (newToken: string, role: UserRole) => {
+  const isDemo = (userEmail ?? "").endsWith("@demo.school");
+
+  const setAuth = (newToken: string, role: UserRole, name?: string, email?: string) => {
     localStorage.setItem("auth_token", newToken);
     localStorage.setItem("user_role", role);
+    if (name) localStorage.setItem("user_name", name);
+    if (email) localStorage.setItem("user_email", email);
     setToken(newToken);
     setUserRole(role);
+    if (name) setUserName(name);
+    if (email) setUserEmail(email);
   };
 
   const logout = () => {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user_role");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("user_email");
     setToken(null);
     setUserRole(null);
+    setUserName(null);
+    setUserEmail(null);
   };
 
   return (
-    <AuthContext.Provider value={{ token, userRole, setAuth, logout }}>
+    <AuthContext.Provider value={{ token, userRole, userName, userEmail, isDemo, setAuth, logout }}>
       {children}
     </AuthContext.Provider>
   );

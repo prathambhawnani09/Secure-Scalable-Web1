@@ -114,8 +114,13 @@ router.post("/login", async (req, res) => {
   });
 });
 
+const ROLE_ACCESS_CODES: Record<string, string> = {
+  admin: "admin222",
+  nurse: "nurse222",
+};
+
 router.post("/register", async (req, res) => {
-  const { name, email, password, role, phone, schoolName } = req.body;
+  const { name, email, password, role, phone, schoolName, accessCode } = req.body;
 
   if (!name || !email || !password || !role) {
     res.status(400).json({ error: "validation_error", message: "Name, email, password and role are required" });
@@ -125,6 +130,13 @@ router.post("/register", async (req, res) => {
   if (!["nurse", "admin", "parent", "student"].includes(role)) {
     res.status(400).json({ error: "validation_error", message: "Role must be nurse, admin, parent, or student" });
     return;
+  }
+
+  if (ROLE_ACCESS_CODES[role]) {
+    if (!accessCode || accessCode !== ROLE_ACCESS_CODES[role]) {
+      res.status(403).json({ error: "forbidden", message: "Invalid access code for this role." });
+      return;
+    }
   }
 
   if (password.length < 8) {
