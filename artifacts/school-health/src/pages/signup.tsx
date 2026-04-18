@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
+  KeyRound,
   Shield,
   User,
   Phone,
@@ -56,14 +57,23 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role | "">("");
+  const [accessCode, setAccessCode] = useState("");
+  const [accessCodeError, setAccessCodeError] = useState("");
   const [phone, setPhone] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showAccessCode, setShowAccessCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const requiresCode = role === "admin" || role === "nurse";
+  const ACCESS_CODES: Record<string, string> = {
+    admin: "admin222",
+    nurse: "nurse222",
+  };
   const [, setLocation] = useLocation();
   const { setAuth } = useAuth();
 
