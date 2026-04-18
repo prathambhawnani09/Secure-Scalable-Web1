@@ -145,15 +145,13 @@ router.post("/register/send-otp", async (req, res) => {
   pendingRegistrations.set(email, { otp, expiresAt, name, email, passwordHash, role, phone, schoolName });
 
   const emailSent = await sendOtpEmail(email, otp, name);
-  const isDev = process.env.NODE_ENV === "development";
 
   res.json({
     success: true,
     emailSent,
     message: emailSent
       ? `Verification code sent to ${email}`
-      : `SMTP not configured — check the server console for your OTP.`,
-    ...(isDev ? { devOtp: otp } : {}),
+      : `Could not send verification email — please contact support.`,
   });
 });
 

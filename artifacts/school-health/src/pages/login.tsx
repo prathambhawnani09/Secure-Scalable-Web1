@@ -3,15 +3,36 @@ import { useLocation } from "wouter";
 import { useLogin, UserRole } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Activity, AlertCircle, ChevronRight, Eye, EyeOff } from "lucide-react";
+import {
+  Activity,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Bell,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 
 const DEMO_ACCOUNTS = [
   { label: "Nurse Demo", email: "nurse@demo.school", role: "School Nurse" },
   { label: "Admin Demo", email: "admin@demo.school", role: "Administrator" },
   { label: "Parent Demo", email: "parent@demo.school", role: "Parent / Guardian" },
+];
+
+const STATS = [
+  { value: "2.4M+", label: "Student visits tracked" },
+  { value: "98%", label: "Outbreak detection accuracy" },
+  { value: "<2min", label: "Average alert time" },
+];
+
+const FEATURES = [
+  { icon: ShieldCheck, text: "AI-powered symptom cluster detection" },
+  { icon: Bell, text: "Instant parent & admin alerts" },
+  { icon: TrendingUp, text: "Real-time health trend analytics" },
+  { icon: Users, text: "Multi-role access for nurses & staff" },
 ];
 
 export default function LoginPage() {
@@ -42,127 +63,170 @@ export default function LoginPage() {
 
   const handleDemoClick = (demoEmail: string, roleLabel: string) => {
     setEmail(demoEmail);
-    setPassword("");
-    setDemoHint(`Enter the demo password for ${roleLabel}`);
-    setShowPassword(false);
+    setPassword("password123");
+    setDemoHint(roleLabel);
     setTimeout(() => {
-      document.getElementById("password")?.focus();
+      document.getElementById("login-submit")?.focus();
     }, 50);
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center text-center">
-          <div className="h-12 w-12 bg-primary rounded-xl flex items-center justify-center mb-4">
-            <Activity className="h-8 w-8 text-primary-foreground" />
+    <div className="min-h-screen flex">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-12"
+        style={{ background: "linear-gradient(135deg, #0f4c75 0%, #1b6ca8 40%, #0e7c61 100%)" }}>
+        <div className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 80%, #fff 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, #fff 0%, transparent 50%)`,
+          }}
+        />
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-12">
+            <div className="h-10 w-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+              <Activity className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-white font-bold text-xl">SchoolHealth AI</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">SchoolHealth AI</h1>
-          <p className="text-muted-foreground mt-2">Real-time outbreak intelligence for schools</p>
+
+          <h1 className="text-4xl font-extrabold text-white leading-tight mb-4">
+            Protect your students.<br />
+            Detect outbreaks early.
+          </h1>
+          <p className="text-white/70 text-lg max-w-sm">
+            Real-time illness intelligence that keeps schools safe — before an outbreak spreads.
+          </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Enter your credentials to access your dashboard</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="nurse@demo.school"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setDemoHint(null); }}
-                  required
-                />
+        <div className="relative z-10 space-y-8">
+          <div className="grid grid-cols-3 gap-4">
+            {STATS.map(({ value, label }) => (
+              <div key={label} className="bg-white/10 backdrop-blur rounded-2xl p-4">
+                <div className="text-2xl font-bold text-white">{value}</div>
+                <div className="text-white/60 text-xs mt-1">{label}</div>
               </div>
+            ))}
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder={demoHint ?? "Enter your password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+          <div className="space-y-3">
+            {FEATURES.map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                  <Icon className="h-4 w-4 text-white" />
                 </div>
-                {demoHint && (
-                  <p className="text-xs text-amber-600 flex items-center gap-1">
-                    <ChevronRight className="h-3 w-3" />
-                    Demo password: <code className="font-mono">password123</code>
-                  </p>
-                )}
+                <span className="text-white/80 text-sm">{text}</span>
               </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-              {login.isError && (
-                <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
-                  Invalid email or password. Please try again.
-                </div>
-              )}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-md">
+          <div className="flex items-center gap-2 mb-8 lg:hidden">
+            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
+              <Activity className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="font-bold text-lg">SchoolHealth AI</span>
+          </div>
 
-              <Button type="submit" className="w-full" disabled={login.isPending}>
-                {login.isPending ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-foreground">Welcome back</h2>
+            <p className="text-muted-foreground mt-1">Sign in to your school health dashboard</p>
+          </div>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or try a demo account</span>
-                </div>
-              </div>
-
-              <div className="grid gap-2 mt-4">
-                {DEMO_ACCOUNTS.map(({ label, email: demoEmail, role }) => (
-                  <Button
-                    key={demoEmail}
-                    variant="outline"
-                    onClick={() => handleDemoClick(demoEmail, role)}
-                    className="justify-between"
-                  >
-                    <span>{label}</span>
-                    <span className="text-xs text-muted-foreground">{demoEmail}</span>
-                  </Button>
-                ))}
-              </div>
-
-              <p className="text-center text-xs text-muted-foreground mt-3">
-                Demo password: <code className="font-mono bg-muted px-1.5 py-0.5 rounded">password123</code>
-              </p>
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@yourschool.edu"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setDemoHint(null); }}
+                required
+                className="h-11"
+                autoComplete="email"
+              />
             </div>
 
-            <div className="mt-6 pt-6 border-t text-center">
-              <p className="text-sm text-muted-foreground">
-                Don't have an account?{" "}
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-11 pr-10"
+                  autoComplete="current-password"
+                />
                 <button
                   type="button"
-                  onClick={() => setLocation("/signup")}
-                  className="text-primary hover:underline font-medium"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  Create account
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
-              </p>
+              </div>
+              {demoHint && (
+                <p className="text-xs text-emerald-600 font-medium">
+                  Demo account filled for {demoHint} — click Sign In to continue.
+                </p>
+              )}
             </div>
-          </CardContent>
-        </Card>
+
+            {login.isError && (
+              <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                Invalid email or password. Please try again.
+              </div>
+            )}
+
+            <Button
+              id="login-submit"
+              type="submit"
+              className="w-full h-11 text-base font-semibold"
+              disabled={login.isPending}
+            >
+              {login.isPending ? "Signing in…" : "Sign In"}
+            </Button>
+          </form>
+
+          <div className="mt-8">
+            <p className="text-xs text-muted-foreground text-center mb-3 uppercase tracking-wider font-medium">
+              Try a demo account
+            </p>
+            <div className="grid gap-2">
+              {DEMO_ACCOUNTS.map(({ label, email: demoEmail, role }) => (
+                <button
+                  key={demoEmail}
+                  type="button"
+                  onClick={() => handleDemoClick(demoEmail, role)}
+                  className="flex items-center justify-between w-full rounded-xl border border-border px-4 py-3 text-sm hover:bg-muted/50 transition-colors text-left"
+                >
+                  <span className="font-medium text-foreground">{label}</span>
+                  <span className="text-muted-foreground text-xs">{demoEmail}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t text-center">
+            <p className="text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <button
+                type="button"
+                onClick={() => setLocation("/signup")}
+                className="text-primary hover:underline font-semibold"
+              >
+                Create account
+              </button>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
