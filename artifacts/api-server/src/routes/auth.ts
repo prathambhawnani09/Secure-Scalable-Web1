@@ -30,7 +30,7 @@ interface PendingRegistration {
   name: string;
   email: string;
   passwordHash: string;
-  role: "nurse" | "admin" | "parent";
+  role: "nurse" | "admin" | "parent" | "student";
   phone?: string;
   schoolName?: string;
 }
@@ -122,8 +122,8 @@ router.post("/register/send-otp", async (req, res) => {
     return;
   }
 
-  if (!["nurse", "admin", "parent"].includes(role)) {
-    res.status(400).json({ error: "validation_error", message: "Role must be nurse, admin, or parent" });
+  if (!["nurse", "admin", "parent", "student"].includes(role)) {
+    res.status(400).json({ error: "validation_error", message: "Role must be nurse, admin, parent, or student" });
     return;
   }
 

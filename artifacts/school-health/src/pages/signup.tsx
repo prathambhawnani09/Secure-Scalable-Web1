@@ -30,7 +30,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 type Step = "info" | "password" | "otp";
-type Role = "nurse" | "admin" | "parent";
+type Role = "nurse" | "admin" | "parent" | "student";
 
 interface PasswordStrength {
   score: number;
@@ -255,6 +255,7 @@ export default function SignupPage() {
                       <SelectItem value="nurse">School Nurse</SelectItem>
                       <SelectItem value="admin">School Administrator</SelectItem>
                       <SelectItem value="parent">Parent / Guardian</SelectItem>
+                      <SelectItem value="student">Student</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
