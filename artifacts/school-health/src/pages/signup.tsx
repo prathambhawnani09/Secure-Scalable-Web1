@@ -85,10 +85,6 @@ export default function SignupPage() {
       setError("Passwords do not match");
       return;
     }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
     setError("");
     setLoading(true);
 
@@ -350,7 +346,7 @@ export default function SignupPage() {
                   <Button
                     type="submit"
                     className="flex-1"
-                    disabled={loading || !password || !confirmPassword || password !== confirmPassword || password.length < 8}
+                    disabled={loading || !password || !confirmPassword || password !== confirmPassword}
                   >
                     {loading ? "Creating account…" : "Create Account"}
                   </Button>

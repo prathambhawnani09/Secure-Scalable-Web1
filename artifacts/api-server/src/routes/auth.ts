@@ -139,11 +139,6 @@ router.post("/register", async (req, res) => {
     }
   }
 
-  if (password.length < 8) {
-    res.status(400).json({ error: "validation_error", message: "Password must be at least 8 characters" });
-    return;
-  }
-
   const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
   if (existing.length > 0) {
     res.status(409).json({ error: "conflict", message: "An account with this email already exists" });
@@ -186,11 +181,6 @@ router.post("/register/send-otp", async (req, res) => {
 
   if (!["nurse", "admin", "parent", "student"].includes(role)) {
     res.status(400).json({ error: "validation_error", message: "Role must be nurse, admin, parent, or student" });
-    return;
-  }
-
-  if (password.length < 8) {
-    res.status(400).json({ error: "validation_error", message: "Password must be at least 8 characters" });
     return;
   }
 
