@@ -6,11 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Activity, AlertCircle } from "lucide-react";
+import { Activity, AlertCircle, ChevronRight, Eye, EyeOff } from "lucide-react";
+
+const DEMO_ACCOUNTS = [
+  { label: "Nurse Demo", email: "nurse@demo.school", role: "School Nurse" },
+  { label: "Admin Demo", email: "admin@demo.school", role: "Administrator" },
+  { label: "Parent Demo", email: "parent@demo.school", role: "Parent / Guardian" },
+];
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [demoHint, setDemoHint] = useState<string | null>(null);
   const { setAuth } = useAuth();
   const [, setLocation] = useLocation();
   const login = useLogin();
@@ -23,7 +31,7 @@ export default function LoginPage() {
       { data: { email, password } },
       {
         onSuccess: (data) => {
-          setAuth(data.token, data.user.role);
+          setAuth(data.token, data.user.role as UserRole);
           if (data.user.role === "nurse") setLocation("/nurse");
           else if (data.user.role === "admin") setLocation("/dashboard");
           else if (data.user.role === "parent") setLocation("/notifications");
@@ -32,20 +40,14 @@ export default function LoginPage() {
     );
   };
 
-  const demoLogin = (roleEmail: string) => {
-    setEmail(roleEmail);
-    setPassword("pb042009");
-    login.mutate(
-      { data: { email: roleEmail, password: "pb042009" } },
-      {
-        onSuccess: (data) => {
-          setAuth(data.token, data.user.role);
-          if (data.user.role === "nurse") setLocation("/nurse");
-          else if (data.user.role === "admin") setLocation("/dashboard");
-          else if (data.user.role === "parent") setLocation("/notifications");
-        },
-      }
-    );
+  const handleDemoClick = (demoEmail: string, roleLabel: string) => {
+    setEmail(demoEmail);
+    setPassword("");
+    setDemoHint(`Enter the demo password for ${roleLabel}`);
+    setShowPassword(false);
+    setTimeout(() => {
+      document.getElementById("password")?.focus();
+    }, 50);
   };
 
   return (
@@ -73,25 +75,43 @@ export default function LoginPage() {
                   type="email"
                   placeholder="nurse@demo.school"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setDemoHint(null); }}
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder={demoHint ?? "Enter your password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {demoHint && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <ChevronRight className="h-3 w-3" />
+                    Demo password: <code className="font-mono">password123</code>
+                  </p>
+                )}
               </div>
 
               {login.isError && (
                 <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
-                  Invalid credentials
+                  Invalid email or password. Please try again.
                 </div>
               )}
 
@@ -100,30 +120,46 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-8">
+            <div className="mt-6">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or use a demo account</span>
+                  <span className="bg-card px-2 text-muted-foreground">Or try a demo account</span>
                 </div>
               </div>
 
               <div className="grid gap-2 mt-4">
-                <Button variant="outline" onClick={() => demoLogin("nurse@demo.school")}>
-                  Nurse Demo
-                </Button>
-                <Button variant="outline" onClick={() => demoLogin("admin@demo.school")}>
-                  Admin Demo
-                </Button>
-                <Button variant="outline" onClick={() => demoLogin("parent@demo.school")}>
-                  Parent Demo
-                </Button>
-                <Button variant="outline" onClick={() => demoLogin("teacher@demo.school")}>
-                  Teacher Demo
-                </Button>
+                {DEMO_ACCOUNTS.map(({ label, email: demoEmail, role }) => (
+                  <Button
+                    key={demoEmail}
+                    variant="outline"
+                    onClick={() => handleDemoClick(demoEmail, role)}
+                    className="justify-between"
+                  >
+                    <span>{label}</span>
+                    <span className="text-xs text-muted-foreground">{demoEmail}</span>
+                  </Button>
+                ))}
               </div>
+
+              <p className="text-center text-xs text-muted-foreground mt-3">
+                Demo password: <code className="font-mono bg-muted px-1.5 py-0.5 rounded">password123</code>
+              </p>
+            </div>
+
+            <div className="mt-6 pt-6 border-t text-center">
+              <p className="text-sm text-muted-foreground">
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setLocation("/signup")}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Create account
+                </button>
+              </p>
             </div>
           </CardContent>
         </Card>

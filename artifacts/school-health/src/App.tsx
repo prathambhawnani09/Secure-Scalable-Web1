@@ -7,6 +7,7 @@ import { Layout } from "@/components/layout";
 
 import IndexPage from "@/pages/index";
 import LoginPage from "@/pages/login";
+import SignupPage from "@/pages/signup";
 import DashboardPage from "@/pages/dashboard";
 import NursePage from "@/pages/nurse";
 import VisitsPage from "@/pages/visits";
@@ -22,6 +23,7 @@ function Router() {
     <Switch>
       <Route path="/" component={IndexPage} />
       <Route path="/login" component={LoginPage} />
+      <Route path="/signup" component={SignupPage} />
       
       <Route path="/dashboard">
         <Layout><DashboardPage /></Layout>
