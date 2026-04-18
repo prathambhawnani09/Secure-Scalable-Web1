@@ -84,6 +84,15 @@ All endpoints are under `/api`:
 - `GET /notifications` — list notifications
 - `POST /notifications/:id/read` — mark as read
 
+## Email / OTP Setup (TODO)
+
+Email sending is not yet configured. The Resend integration was not connected. To enable real OTP emails for signup:
+- **Option A**: Connect Resend via Replit integrations (connector ID: `connector:ccfg_resend_01K69QKYK789WN202XSE3QS17V`) and swap nodemailer for the Resend SDK in `artifacts/api-server/src/routes/auth.ts`
+- **Option B**: Set secrets `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` for nodemailer (already wired up in auth.ts)
+- **Option C**: Connect SendGrid via Replit integrations (connector ID: `connector:ccfg_sendgrid_01K69QKAPBPJ4SWD8GQHGY03D5`)
+
+Until configured, OTP codes are logged to the server console only — the signup flow will show an error to users.
+
 ## Outbreak Detection Logic
 
 When a nurse logs a visit, the system automatically checks if more than 3 students from the same classroom reported visits in the past 7 days. If a symptom appears 3+ times, an alert is created. Severity levels:
