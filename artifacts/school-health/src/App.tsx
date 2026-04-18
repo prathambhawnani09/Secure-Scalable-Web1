@@ -1,9 +1,10 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider, useAuth } from "@/lib/auth";
 import { Layout } from "@/components/layout";
+import { UserRole } from "@workspace/api-client-react";
 
 import IndexPage from "@/pages/index";
 import LoginPage from "@/pages/login";
@@ -20,6 +21,29 @@ import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
+function ProtectedRoute({
+  children,
+  allowedRoles,
+}: {
+  children: React.ReactNode;
+  allowedRoles: UserRole[];
+}) {
+  const { token, userRole } = useAuth();
+
+  if (!token || !userRole) {
+    return <Redirect to="/login" />;
+  }
+
+  if (!allowedRoles.includes(userRole)) {
+    if (userRole === "parent" || userRole === "student") {
+      return <Redirect to="/notifications" />;
+    }
+    return <Redirect to="/dashboard" />;
+  }
+
+  return <Layout>{children}</Layout>;
+}
+
 function Router() {
   return (
     <Switch>
@@ -28,28 +52,44 @@ function Router() {
       <Route path="/signup" component={SignupPage} />
 
       <Route path="/dashboard">
-        <Layout><DashboardPage /></Layout>
+        <ProtectedRoute allowedRoles={["admin"]}>
+          <DashboardPage />
+        </ProtectedRoute>
       </Route>
       <Route path="/nurse">
-        <Layout><NursePage /></Layout>
+        <ProtectedRoute allowedRoles={["nurse", "admin"]}>
+          <NursePage />
+        </ProtectedRoute>
       </Route>
       <Route path="/visits">
-        <Layout><VisitsPage /></Layout>
+        <ProtectedRoute allowedRoles={["nurse", "admin"]}>
+          <VisitsPage />
+        </ProtectedRoute>
       </Route>
       <Route path="/alerts">
-        <Layout><AlertsPage /></Layout>
+        <ProtectedRoute allowedRoles={["nurse", "admin"]}>
+          <AlertsPage />
+        </ProtectedRoute>
       </Route>
       <Route path="/students">
-        <Layout><StudentsPage /></Layout>
+        <ProtectedRoute allowedRoles={["nurse", "admin"]}>
+          <StudentsPage />
+        </ProtectedRoute>
       </Route>
       <Route path="/notifications">
-        <Layout><NotificationsPage /></Layout>
+        <ProtectedRoute allowedRoles={["nurse", "admin", "parent", "student"]}>
+          <NotificationsPage />
+        </ProtectedRoute>
       </Route>
       <Route path="/health-records">
-        <Layout><HealthRecordsPage /></Layout>
+        <ProtectedRoute allowedRoles={["parent", "student"]}>
+          <HealthRecordsPage />
+        </ProtectedRoute>
       </Route>
       <Route path="/resources">
-        <Layout><ResourcesPage /></Layout>
+        <ProtectedRoute allowedRoles={["parent", "student"]}>
+          <ResourcesPage />
+        </ProtectedRoute>
       </Route>
 
       <Route component={NotFound} />
