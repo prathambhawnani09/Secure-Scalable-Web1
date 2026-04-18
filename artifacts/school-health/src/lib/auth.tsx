@@ -5,7 +5,8 @@ interface AuthContextType {
   token: string | null;
   userRole: UserRole | null;
   userName: string | null;
-  setAuth: (token: string, role: UserRole, name?: string) => void;
+  userEmail: string | null;
+  setAuth: (token: string, role: UserRole, name?: string, email?: string) => void;
   logout: () => void;
 }
 
@@ -19,27 +20,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState<string | null>(
     localStorage.getItem("user_name") || null
   );
+  const [userEmail, setUserEmail] = useState<string | null>(
+    localStorage.getItem("user_email") || null
+  );
 
-  const setAuth = (newToken: string, role: UserRole, name?: string) => {
+  const setAuth = (newToken: string, role: UserRole, name?: string, email?: string) => {
     localStorage.setItem("auth_token", newToken);
     localStorage.setItem("user_role", role);
     if (name) localStorage.setItem("user_name", name);
+    if (email) localStorage.setItem("user_email", email);
     setToken(newToken);
     setUserRole(role);
     if (name) setUserName(name);
+    if (email) setUserEmail(email);
   };
 
   const logout = () => {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user_role");
     localStorage.removeItem("user_name");
+    localStorage.removeItem("user_email");
     setToken(null);
     setUserRole(null);
     setUserName(null);
+    setUserEmail(null);
   };
 
   return (
-    <AuthContext.Provider value={{ token, userRole, userName, setAuth, logout }}>
+    <AuthContext.Provider value={{ token, userRole, userName, userEmail, setAuth, logout }}>
       {children}
     </AuthContext.Provider>
   );
