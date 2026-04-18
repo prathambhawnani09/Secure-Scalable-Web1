@@ -5,19 +5,18 @@ import {
   Activity,
   AlertCircle,
   Bell,
-  BookOpen,
-  ClipboardList,
   LayoutDashboard,
   LogOut,
   Stethoscope,
   Users,
 } from "lucide-react";
-import { useLogout } from "@workspace/api-client-react";
+import { useGetMe, useLogout } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { userRole, userName, logout: clearAuth } = useAuth();
+  const { userRole, logout: clearAuth } = useAuth();
   const [location, setLocation] = useLocation();
+  const { data: user } = useGetMe({ query: { enabled: !!userRole } });
   const logout = useLogout();
 
   const handleLogout = () => {
@@ -35,16 +34,12 @@ export function Layout({ children }: { children: ReactNode }) {
     { href: "/visits", label: "All Visits", icon: Activity, roles: ["nurse", "admin"] },
     { href: "/alerts", label: "Alerts", icon: AlertCircle, roles: ["nurse", "admin"] },
     { href: "/students", label: "Students", icon: Users, roles: ["nurse", "admin"] },
-    { href: "/health-records", label: "Health Records", icon: ClipboardList, roles: ["parent", "student"] },
-    { href: "/notifications", label: "Notifications", icon: Bell, roles: ["nurse", "admin", "parent", "student"] },
-    { href: "/resources", label: "Resources", icon: BookOpen, roles: ["parent", "student"] },
+    { href: "/notifications", label: "Notifications", icon: Bell, roles: ["nurse", "admin", "parent"] },
   ];
 
   const visibleNavItems = navItems.filter(
     (item) => userRole && item.roles.includes(userRole)
   );
-
-  const displayName = userName || (userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "User");
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -79,16 +74,11 @@ export function Layout({ children }: { children: ReactNode }) {
         </nav>
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center justify-between">
-            <div className="text-sm min-w-0">
-              <div className="font-medium text-sidebar-foreground truncate">{displayName}</div>
+            <div className="text-sm">
+              <div className="font-medium text-sidebar-foreground">{user?.name || "Loading..."}</div>
               <div className="text-sidebar-foreground/70 capitalize">{userRole}</div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="text-sidebar-foreground hover:bg-sidebar-accent flex-shrink-0"
-            >
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-sidebar-foreground hover:bg-sidebar-accent">
               <LogOut className="h-5 w-5" />
             </Button>
           </div>

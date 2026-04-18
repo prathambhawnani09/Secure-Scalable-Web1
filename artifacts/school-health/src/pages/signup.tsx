@@ -111,10 +111,10 @@ export default function SignupPage() {
         return;
       }
 
-      setAuth(data.token, data.user.role, data.user.name);
+      setAuth(data.token, data.user.role);
       if (data.user.role === "nurse") setLocation("/nurse");
       else if (data.user.role === "admin") setLocation("/dashboard");
-      else setLocation("/health-records");
+      else setLocation("/notifications");
     } catch {
       setError("Network error. Please try again.");
     } finally {

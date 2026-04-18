@@ -82,11 +82,10 @@ export default function LoginPage() {
       { data: { email, password } },
       {
         onSuccess: (data) => {
-          setAuth(data.token, data.user.role as UserRole, data.user.name);
+          setAuth(data.token, data.user.role as UserRole);
           if (data.user.role === "nurse") setLocation("/nurse");
           else if (data.user.role === "admin") setLocation("/dashboard");
-          else if (data.user.role === "parent") setLocation("/health-records");
-          else setLocation("/health-records");
+          else if (data.user.role === "parent") setLocation("/notifications");
         },
       }
     );
@@ -102,11 +101,10 @@ export default function LoginPage() {
       { data: { email: demoEmail, password: "password123" } },
       {
         onSuccess: (data) => {
-          setAuth(data.token, data.user.role as UserRole, data.user.name);
+          setAuth(data.token, data.user.role as UserRole);
           if (data.user.role === "nurse") setLocation("/nurse");
           else if (data.user.role === "admin") setLocation("/dashboard");
-          else if (data.user.role === "parent") setLocation("/health-records");
-          else setLocation("/health-records");
+          else if (data.user.role === "parent") setLocation("/notifications");
         },
       }
     );

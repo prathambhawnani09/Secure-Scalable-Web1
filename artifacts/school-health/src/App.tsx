@@ -14,8 +14,6 @@ import VisitsPage from "@/pages/visits";
 import AlertsPage from "@/pages/alerts";
 import StudentsPage from "@/pages/students";
 import NotificationsPage from "@/pages/notifications";
-import HealthRecordsPage from "@/pages/health-records";
-import ResourcesPage from "@/pages/resources";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -26,7 +24,7 @@ function Router() {
       <Route path="/" component={IndexPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/signup" component={SignupPage} />
-
+      
       <Route path="/dashboard">
         <Layout><DashboardPage /></Layout>
       </Route>
@@ -44,12 +42,6 @@ function Router() {
       </Route>
       <Route path="/notifications">
         <Layout><NotificationsPage /></Layout>
-      </Route>
-      <Route path="/health-records">
-        <Layout><HealthRecordsPage /></Layout>
-      </Route>
-      <Route path="/resources">
-        <Layout><ResourcesPage /></Layout>
       </Route>
 
       <Route component={NotFound} />
