@@ -21,21 +21,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle, AlertTriangle, CheckCircle2, Eye, EyeOff, KeyRound, Lock, MapPin, Users, Loader2, ShieldAlert } from "lucide-react";
 
-const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-
 export default function AlertsPage() {
   const [statusFilter, setStatusFilter] = useState<ListAlertsStatus>("active");
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [selectedAlertId, setSelectedAlertId] = useState<number | null>(null);
   const [resolveNote, setResolveNote] = useState("");
-  const [resolvePassword, setResolvePassword] = useState("");
   const [resolveCode, setResolveCode] = useState("");
-  const [showResolvePassword, setShowResolvePassword] = useState(false);
   const [showResolveCode, setShowResolveCode] = useState(false);
   const [resolveAuthError, setResolveAuthError] = useState("");
-  const [verifying, setVerifying] = useState(false);
 
-  const { userEmail, isDemo } = useAuth();
+  const { isDemo } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -45,7 +40,6 @@ export default function AlertsPage() {
   const handleResolveClick = (id: number) => {
     setSelectedAlertId(id);
     setResolveNote("");
-    setResolvePassword("");
     setResolveCode("");
     setResolveAuthError("");
     setResolveDialogOpen(true);
@@ -59,30 +53,6 @@ export default function AlertsPage() {
       setResolveAuthError("Incorrect admin code.");
       return;
     }
-
-    if (!resolvePassword) {
-      setResolveAuthError("Please enter your password.");
-      return;
-    }
-
-    setVerifying(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userEmail, password: resolvePassword }),
-      });
-      if (!res.ok) {
-        setResolveAuthError("Incorrect password. Please try again.");
-        setVerifying(false);
-        return;
-      }
-    } catch {
-      setResolveAuthError("Could not verify credentials. Check your connection.");
-      setVerifying(false);
-      return;
-    }
-    setVerifying(false);
 
     resolveAlert.mutate(
       { id: selectedAlertId, data: { note: resolveNote || "Resolved by admin" } },
@@ -128,7 +98,7 @@ export default function AlertsPage() {
     return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
-  const isSubmitDisabled = verifying || resolveAlert.isPending || !resolvePassword || !resolveCode;
+  const isSubmitDisabled = resolveAlert.isPending || !resolveCode;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -255,7 +225,7 @@ export default function AlertsPage() {
               Resolve Alert
             </DialogTitle>
             <DialogDescription>
-              This action requires your admin password and access code to confirm.
+              Enter the admin code to confirm this action.
             </DialogDescription>
           </DialogHeader>
 
@@ -272,33 +242,6 @@ export default function AlertsPage() {
             </div>
 
             <div className="border-t pt-4 space-y-3">
-              <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                <Lock className="h-4 w-4 text-muted-foreground" />
-                Confirm your identity
-              </p>
-
-              <div className="space-y-2">
-                <Label htmlFor="resolvePassword">Your Password</Label>
-                <div className="relative">
-                  <Input
-                    id="resolvePassword"
-                    type={showResolvePassword ? "text" : "password"}
-                    placeholder="Enter your account password"
-                    value={resolvePassword}
-                    onChange={(e) => { setResolvePassword(e.target.value); setResolveAuthError(""); }}
-                    className="pr-10"
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowResolvePassword(!showResolvePassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showResolvePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="resolveCode" className="flex items-center gap-1">
                   <KeyRound className="h-3 w-3" /> Admin Code
@@ -335,8 +278,8 @@ export default function AlertsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setResolveDialogOpen(false)}>Cancel</Button>
             <Button onClick={submitResolve} disabled={isSubmitDisabled} variant="destructive">
-              {(verifying || resolveAlert.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {verifying ? "Verifying…" : "Resolve Alert"}
+              {resolveAlert.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {resolveAlert.isPending ? "Resolving…" : "Resolve Alert"}
             </Button>
           </DialogFooter>
         </DialogContent>
