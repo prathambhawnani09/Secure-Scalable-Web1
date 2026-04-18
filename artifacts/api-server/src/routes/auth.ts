@@ -114,6 +114,56 @@ router.post("/login", async (req, res) => {
   });
 });
 
+router.post("/register", async (req, res) => {
+  const { name, email, password, role, phone, schoolName } = req.body;
+
+  if (!name || !email || !password || !role) {
+    res.status(400).json({ error: "validation_error", message: "Name, email, password and role are required" });
+    return;
+  }
+
+  if (!["nurse", "admin", "parent", "student"].includes(role)) {
+    res.status(400).json({ error: "validation_error", message: "Role must be nurse, admin, parent, or student" });
+    return;
+  }
+
+  if (password.length < 8) {
+    res.status(400).json({ error: "validation_error", message: "Password must be at least 8 characters" });
+    return;
+  }
+
+  const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+  if (existing.length > 0) {
+    res.status(409).json({ error: "conflict", message: "An account with this email already exists" });
+    return;
+  }
+
+  const passwordHash = hashPassword(password);
+
+  const [user] = await db.insert(usersTable).values({
+    email,
+    passwordHash,
+    name,
+    role,
+    schoolId: 1,
+  }).returning();
+
+  const token = generateToken(user.id);
+  tokenStore.set(token, user.id);
+
+  res.json({
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      schoolId: user.schoolId,
+      createdAt: user.createdAt.toISOString(),
+    },
+    token,
+  });
+});
+
 router.post("/register/send-otp", async (req, res) => {
   const { name, email, password, role, phone, schoolName } = req.body;
 

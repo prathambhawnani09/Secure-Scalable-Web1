@@ -14,12 +14,41 @@ import {
   Bell,
   TrendingUp,
   Users,
+  Stethoscope,
+  UserCog,
+  HeartHandshake,
+  Sparkles,
+  X,
 } from "lucide-react";
 
 const DEMO_ACCOUNTS = [
-  { label: "Nurse Demo", email: "nurse@demo.school", role: "School Nurse" },
-  { label: "Admin Demo", email: "admin@demo.school", role: "Administrator" },
-  { label: "Parent Demo", email: "parent@demo.school", role: "Parent / Guardian" },
+  {
+    label: "Nurse",
+    email: "nurse@demo.school",
+    role: "School Nurse",
+    icon: Stethoscope,
+    color: "bg-emerald-500",
+    hoverColor: "hover:bg-emerald-600",
+    ring: "ring-emerald-300",
+  },
+  {
+    label: "Admin",
+    email: "admin@demo.school",
+    role: "Administrator",
+    icon: UserCog,
+    color: "bg-blue-500",
+    hoverColor: "hover:bg-blue-600",
+    ring: "ring-blue-300",
+  },
+  {
+    label: "Parent",
+    email: "parent@demo.school",
+    role: "Parent / Guardian",
+    icon: HeartHandshake,
+    color: "bg-purple-500",
+    hoverColor: "hover:bg-purple-600",
+    ring: "ring-purple-300",
+  },
 ];
 
 const STATS = [
@@ -39,6 +68,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
   const [demoHint, setDemoHint] = useState<string | null>(null);
   const { setAuth } = useAuth();
   const [, setLocation] = useLocation();
@@ -61,20 +91,34 @@ export default function LoginPage() {
     );
   };
 
-  const handleDemoClick = (demoEmail: string, roleLabel: string) => {
+  const handleDemoLogin = (demoEmail: string, roleLabel: string) => {
+    setDemoOpen(false);
+    setDemoHint(roleLabel);
     setEmail(demoEmail);
     setPassword("password123");
-    setDemoHint(roleLabel);
-    setTimeout(() => {
-      document.getElementById("login-submit")?.focus();
-    }, 50);
+
+    login.mutate(
+      { data: { email: demoEmail, password: "password123" } },
+      {
+        onSuccess: (data) => {
+          setAuth(data.token, data.user.role as UserRole);
+          if (data.user.role === "nurse") setLocation("/nurse");
+          else if (data.user.role === "admin") setLocation("/dashboard");
+          else if (data.user.role === "parent") setLocation("/notifications");
+        },
+      }
+    );
   };
 
   return (
     <div className="min-h-screen flex">
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-12"
-        style={{ background: "linear-gradient(135deg, #0f4c75 0%, #1b6ca8 40%, #0e7c61 100%)" }}>
-        <div className="absolute inset-0 opacity-10"
+      {/* Left hero panel */}
+      <div
+        className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-12"
+        style={{ background: "linear-gradient(135deg, #0f4c75 0%, #1b6ca8 40%, #0e7c61 100%)" }}
+      >
+        <div
+          className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `radial-gradient(circle at 20% 80%, #fff 0%, transparent 50%),
               radial-gradient(circle at 80% 20%, #fff 0%, transparent 50%)`,
@@ -121,7 +165,8 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 bg-background">
+      {/* Right form panel */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8 bg-background relative">
         <div className="w-full max-w-md">
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
@@ -173,7 +218,7 @@ export default function LoginPage() {
               </div>
               {demoHint && (
                 <p className="text-xs text-emerald-600 font-medium">
-                  Demo account filled for {demoHint} — click Sign In to continue.
+                  Signing in as {demoHint}…
                 </p>
               )}
             </div>
@@ -186,7 +231,6 @@ export default function LoginPage() {
             )}
 
             <Button
-              id="login-submit"
               type="submit"
               className="w-full h-11 text-base font-semibold"
               disabled={login.isPending}
@@ -194,25 +238,6 @@ export default function LoginPage() {
               {login.isPending ? "Signing in…" : "Sign In"}
             </Button>
           </form>
-
-          <div className="mt-8">
-            <p className="text-xs text-muted-foreground text-center mb-3 uppercase tracking-wider font-medium">
-              Try a demo account
-            </p>
-            <div className="grid gap-2">
-              {DEMO_ACCOUNTS.map(({ label, email: demoEmail, role }) => (
-                <button
-                  key={demoEmail}
-                  type="button"
-                  onClick={() => handleDemoClick(demoEmail, role)}
-                  className="flex items-center justify-between w-full rounded-xl border border-border px-4 py-3 text-sm hover:bg-muted/50 transition-colors text-left"
-                >
-                  <span className="font-medium text-foreground">{label}</span>
-                  <span className="text-muted-foreground text-xs">{demoEmail}</span>
-                </button>
-              ))}
-            </div>
-          </div>
 
           <div className="mt-8 pt-6 border-t text-center">
             <p className="text-sm text-muted-foreground">
@@ -226,6 +251,59 @@ export default function LoginPage() {
               </button>
             </p>
           </div>
+        </div>
+
+        {/* Floating bubble demo menu */}
+        <div className="fixed bottom-8 right-8 flex flex-col items-end gap-3 z-50">
+          {/* Demo account bubbles — slide up when open */}
+          <div
+            className={`flex flex-col items-end gap-3 transition-all duration-300 ${
+              demoOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-4 pointer-events-none"
+            }`}
+          >
+            {DEMO_ACCOUNTS.map(({ label, email: demoEmail, role, icon: Icon, color, hoverColor, ring }) => (
+              <button
+                key={demoEmail}
+                type="button"
+                onClick={() => handleDemoLogin(demoEmail, role)}
+                className={`flex items-center gap-3 ${color} ${hoverColor} text-white rounded-full pl-4 pr-5 py-2.5 shadow-lg ring-2 ${ring} ring-offset-2 transition-all duration-200 hover:scale-105 active:scale-95`}
+              >
+                <div className="h-7 w-7 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-semibold leading-tight">{label}</div>
+                  <div className="text-xs opacity-75 leading-tight">{demoEmail}</div>
+                </div>
+              </button>
+            ))}
+
+            <p className="text-xs text-muted-foreground text-right pr-1">
+              All use password: <code className="font-mono bg-muted px-1 py-0.5 rounded">password123</code>
+            </p>
+          </div>
+
+          {/* Main FAB toggle button */}
+          <button
+            type="button"
+            onClick={() => setDemoOpen((o) => !o)}
+            className={`h-14 w-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 ring-2 ring-offset-2 ${
+              demoOpen
+                ? "bg-slate-700 hover:bg-slate-800 ring-slate-400 rotate-180"
+                : "bg-primary hover:bg-primary/90 ring-primary/40 hover:scale-110"
+            }`}
+            title="Try a demo account"
+          >
+            {demoOpen ? (
+              <X className="h-6 w-6 text-white" />
+            ) : (
+              <Sparkles className="h-6 w-6 text-white" />
+            )}
+          </button>
+
+          {!demoOpen && (
+            <span className="text-xs text-muted-foreground font-medium -mt-1">Try demo</span>
+          )}
         </div>
       </div>
     </div>

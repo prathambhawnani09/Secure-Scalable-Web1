@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
-  Mail,
   Shield,
   User,
   Phone,
@@ -25,11 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-type Step = "info" | "password" | "otp";
+type Step = "info" | "password";
 type Role = "nurse" | "admin" | "parent" | "student";
 
 interface PasswordStrength {
@@ -64,9 +62,6 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [devOtp, setDevOtp] = useState<string | null>(null);
-  const [emailSent, setEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [, setLocation] = useLocation();
@@ -89,7 +84,7 @@ export default function SignupPage() {
     setStep("password");
   };
 
-  const handlePasswordNext = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password || !confirmPassword) return;
     if (password !== confirmPassword) {
@@ -104,7 +99,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/register/send-otp`, {
+      const res = await fetch(`${API_BASE}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: fullName, email, password, role, phone, schoolName }),
@@ -116,63 +111,12 @@ export default function SignupPage() {
         return;
       }
 
-      setEmailSent(data.emailSent);
-      if (data.devOtp) setDevOtp(data.devOtp);
-      setStep("otp");
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) return;
-    setError("");
-    setLoading(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/register/verify-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message || "Verification failed");
-        return;
-      }
-
       setAuth(data.token, data.user.role);
       if (data.user.role === "nurse") setLocation("/nurse");
       else if (data.user.role === "admin") setLocation("/dashboard");
       else setLocation("/notifications");
     } catch {
       setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setError("");
-    setLoading(true);
-    setOtp("");
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/register/send-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: fullName, email, password, role, phone, schoolName }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || "Could not resend code");
-        return;
-      }
-      if (data.devOtp) setDevOtp(data.devOtp);
-    } catch {
-      setError("Network error.");
     } finally {
       setLoading(false);
     }
@@ -190,24 +134,26 @@ export default function SignupPage() {
         </div>
 
         <div className="flex items-center gap-2 justify-center">
-          {(["info", "password", "otp"] as Step[]).map((s, i) => (
+          {(["info", "password"] as Step[]).map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
                   step === s
                     ? "bg-primary text-primary-foreground"
-                    : (step === "password" && i === 0) || (step === "otp" && i < 2)
+                    : step === "password" && i === 0
                     ? "bg-green-500 text-white"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
-                {(step === "password" && i === 0) || (step === "otp" && i < 2) ? (
+                {step === "password" && i === 0 ? (
                   <CheckCircle2 className="h-4 w-4" />
                 ) : (
                   i + 1
                 )}
               </div>
-              {i < 2 && <div className={`h-px w-8 ${(step === "password" && i === 0) || (step === "otp" && i < 2) ? "bg-green-500" : "bg-muted"}`} />}
+              {i < 1 && (
+                <div className={`h-px w-8 ${step === "password" && i === 0 ? "bg-green-500" : "bg-muted"}`} />
+              )}
             </div>
           ))}
         </div>
@@ -309,7 +255,7 @@ export default function SignupPage() {
               <CardDescription>Choose a strong password to protect your account</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handlePasswordNext} className="space-y-4">
+              <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
                   <div className="relative">
@@ -321,6 +267,7 @@ export default function SignupPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       className="pr-10"
+                      autoComplete="new-password"
                     />
                     <button
                       type="button"
@@ -369,6 +316,7 @@ export default function SignupPage() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       className="pr-10"
+                      autoComplete="new-password"
                     />
                     <button
                       type="button"
@@ -401,92 +349,10 @@ export default function SignupPage() {
                     className="flex-1"
                     disabled={loading || !password || !confirmPassword || password !== confirmPassword || password.length < 8}
                   >
-                    {loading ? "Sending code..." : "Send Verification Code"}
+                    {loading ? "Creating account…" : "Create Account"}
                   </Button>
                 </div>
               </form>
-            </CardContent>
-          </Card>
-        )}
-
-        {step === "otp" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" /> Verify Your Email
-              </CardTitle>
-              <CardDescription>
-                {emailSent
-                  ? `We sent a 6-digit code to ${email}`
-                  : `Enter the 6-digit code below (check server console or the hint below)`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
-                  <Mail className="h-7 w-7 text-blue-600" />
-                </div>
-                <p className="text-center text-sm text-muted-foreground">
-                  Check your inbox at <span className="font-semibold text-foreground">{email}</span> and enter the 6-digit code.
-                </p>
-              </div>
-
-              {devOtp && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-800">
-                  <p className="font-semibold mb-1">Development mode — Email not sent</p>
-                  <p>Your OTP code: <span className="font-mono font-bold text-base tracking-widest">{devOtp}</span></p>
-                </div>
-              )}
-
-              <div className="flex justify-center">
-                <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-
-              {error && (
-                <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0" /> {error}
-                </div>
-              )}
-
-              <Button
-                className="w-full"
-                onClick={handleVerifyOtp}
-                disabled={otp.length !== 6 || loading}
-              >
-                {loading ? "Verifying..." : "Verify & Create Account"}
-              </Button>
-
-              <div className="text-center text-sm text-muted-foreground space-y-2">
-                <p>
-                  Didn't receive it?{" "}
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    disabled={loading}
-                    className="text-primary hover:underline font-medium disabled:opacity-50"
-                  >
-                    Resend code
-                  </button>
-                </p>
-                <p>
-                  <button
-                    type="button"
-                    onClick={() => { setStep("password"); setError(""); setOtp(""); }}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    ← Go back
-                  </button>
-                </p>
-              </div>
             </CardContent>
           </Card>
         )}
